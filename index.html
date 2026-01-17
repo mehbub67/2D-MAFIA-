@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>Offline Car Racing</title>
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:Arial}
+body{background:#000;color:#fff;overflow:hidden}
+
+/* ---------- SCREEN SYSTEM ---------- */
+.screen{position:absolute;inset:0;display:none}
+.screen.active{display:flex}
+
+/* ---------- MENU ---------- */
+#menu{flex-direction:column;padding:16px}
+.topbar{display:flex;justify-content:space-between;margin-bottom:15px}
+.menu-cards{display:flex;gap:14px;overflow-x:auto}
+.card{
+  min-width:260px;height:150px;border-radius:16px;
+  background:#222;padding:12px;
+  display:flex;align-items:flex-end;
+  font-size:18px;cursor:pointer
+}
+.card.active{outline:3px solid #e91e63}
+
+/* ---------- GARAGE ---------- */
+#garage{flex-direction:column;align-items:center;padding:15px;overflow:auto}
+.car-box{
+  width:280px;background:#222;border-radius:14px;
+  margin:10px;padding:10px;text-align:center
+}
+.car-img{
+  width:100%;height:100px;border-radius:10px;
+  background-size:contain;background-repeat:no-repeat;
+  background-position:center
+}
+
+/* ---------- SETTINGS ---------- */
+#settings{flex-direction:column;align-items:center;justify-content:center;gap:15px}
+.toggle{padding:12px 25px;border-radius:10px;background:#333}
+
+/* ---------- GAME ---------- */
+#game{background:#333}
+#road{
+  position:absolute;left:20%;width:60%;height:100%;
+  background:linear-gradient(#555,#222)
+}
+.city #road{background:linear-gradient(#444,#222)}
+.desert #road{background:linear-gradient(#c2a060,#8d6e3f)}
+.night #road{background:linear-gradient(#111,#000)}
+
+.car{
+  position:absolute;width:50px;height:90px;
+  background-size:contain;background-repeat:no-repeat
+}
+#player{bottom:20px}
+
+/* ---------- HUD ---------- */
+#hud{
+  position:absolute;top:10px;left:10px;right:10px;
+  display:flex;justify-content:space-between;font-size:14px
+}
+
+/* ---------- CONTROLS ---------- */
+#controls{
+  position:absolute;bottom:10px;width:100%;
+  display:flex;justify-content:space-between;padding:0 20px
+}
+.ctrl,#nitro,#pauseBtn{
+  width:60px;height:60px;border-radius:50%;
+  background:rgba(255,255,255,.2);
+  display:flex;align-items:center;justify-content:center
+}
+#nitro{
+  position:absolute;right:20px;bottom:90px;
+  background:gold;color:#000;font-weight:bold
+}
+#pauseBtn{position:absolute;top:50px;right:10px}
+
+/* ---------- OVERLAY ---------- */
+.overlay{
+  position:absolute;inset:0;background:rgba(0,0,0,.7);
+  display:none;align-items:center;justify-content:center;
+  flex-direction:column;gap:10px;z-index:5
+}
+.overlay.active{display:flex}
+</style>
+</head>
+
+<body>
+
+<!-- MENU -->
+<div id="menu" class="screen active">
+  <div class="topbar">
+    <h2>HOME</h2>
+    <div>💰 <span id="menuCoins">0</span></div>
+  </div>
+  <div class="menu-cards">
+    <div class="card active" onclick="openLevels()">QUICK RACE</div>
+    <div class="card" onclick="openGarage()">GARAGE</div>
+    <div class="card" onclick="openSettings()">SETTINGS</div>
+  </div>
+</div>
+
+<!-- LEVELS -->
+<div id="levels" class="screen">
+  <button onclick="startGame(1,'city')">City</button>
+  <button onclick="startGame(2,'desert')">Desert</button>
+  <button onclick="startGame(3,'night')">Night Highway</button>
+  <button onclick="goMenu()">Back</button>
+</div>
+
+<!-- GARAGE -->
+<div id="garage" class="screen">
+  <h3>Garage</h3>
+
+  <div class="car-box">
+    <div class="car-img" style="background-image:url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADIAAAAgCAYAAABU1PscAAAAKElEQVRoge3BAQEAAACCIP+vbkhAAQAAAAAAAAAAAAB8G4cAAAGlS9YAAAAASUVORK5CYII=)"></div>
+    <p>Basic Car</p>
+    <button onclick="selectCar(0)">Select</button>
+  </div>
+
+  <div class="car-box">
+    <div class="car-img" style="background-image:url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADIAAAAgCAYAAABU1PscAAAAKElEQVRoge3BAQEAAACCIP+vbkhAAQAAAAAAAAAAAAB8G4cAAAGlS9YAAAAASUVORK5CYII=)"></div>
+    <p>Speed Car (500)</p>
+    <button onclick="buyCar(1,500)">Buy / Select</button>
+  </div>
+
+  <div class="car-box">
+    <div class="car-img" style="background-image:url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADIAAAAgCAYAAABU1PscAAAAKElEQVRoge3BAQEAAACCIP+vbkhAAQAAAAAAAAAAAAB8G4cAAAGlS9YAAAAASUVORK5CYII=)"></div>
+    <p>Police Car (1000)</p>
+    <button onclick="buyCar(2,1000)">Buy / Select</button>
+  </div>
+
+  <button onclick="goMenu()">Back</button>
+</div>
+
+<!-- SETTINGS -->
+<div id="settings" class="screen">
+  <div class="toggle" onclick="toggleSound()">Sound: <span id="soundTxt">ON</span></div>
+  <button onclick="goMenu()">Back</button>
+</div>
+
+<!-- GAME -->
+<div id="game" class="screen">
+  <div id="road"></div>
+  <div id="player" class="car"></div>
+
+  <div id="hud">
+    <div>Score: <span id="score">0</span></div>
+    <div>Coins: <span id="coins">0</span></div>
+  </div>
+
+  <div id="pauseBtn" onclick="pauseGame()">⏸</div>
+
+  <div id="controls">
+    <div class="ctrl" ontouchstart="move(-30)">◀</div>
+    <div class="ctrl" ontouchstart="move(30)">▶</div>
+  </div>
+  <div id="nitro" ontouchstart="useNitro()">N</div>
+
+  <div id="pauseMenu" class="overlay">
+    <h2>Paused</h2>
+    <button onclick="resumeGame()">Resume</button>
+    <button onclick="goMenu()">Menu</button>
+  </div>
+</div>
+
+<script>
+/* STORAGE */
+let coins=+localStorage.getItem("coins")||0;
+let cars=JSON.parse(localStorage.getItem("cars")||"[true,false,false]");
+let selected=+localStorage.getItem("selected")||0;
+let soundOn=localStorage.getItem("sound")!=="off";
+
+menuCoins.textContent=coins;
+soundTxt.textContent=soundOn?"ON":"OFF";
+
+/* SCREEN */
+function show(id){
+  document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
+}
+function goMenu(){save();menuCoins.textContent=coins;show("menu")}
+function openLevels(){show("levels")}
+function openGarage(){show("garage")}
+function openSettings(){show("settings")}
+
+/* GARAGE */
+function buyCar(i,c){
+  if(cars[i]){selectCar(i);return}
+  if(coins>=c){coins-=c;cars[i]=true;selectCar(i)}
+}
+function selectCar(i){if(cars[i])selected=i}
+
+/* GAME */
+let x=0,score=0,run=false,nitro=false,paused=false;
+let enemies=[],police=[];
+const player=document.getElementById("player");
+const game=document.getElementById("game");
+
+function startGame(lvl,track){
+  show("game");
+  game.className="screen active "+track;
+  score=0;run=true;paused=false;
+  enemies=[];police=[];
+  x=innerWidth/2-25;
+  player.style.backgroundImage="url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADIAAAAgCAYAAABU1PscAAAAKElEQVRoge3BAQEAAACCIP+vbkhAAQAAAAAAAAAAAAB8G4cAAAGlS9YAAAAASUVORK5CYII=)";
+  loop();
+}
+
+function move(v){x+=v}
+function useNitro(){nitro=true;setTimeout(()=>nitro=false,1200)}
+
+function pauseGame(){
+  paused=true;
+  document.getElementById("pauseMenu").classList.add("active");
+}
+function resumeGame(){
+  paused=false;
+  document.getElementById("pauseMenu").classList.remove("active");
+}
+
+function loop(){
+  if(!run){return}
+  if(!paused){
+    player.style.left=x+"px";
+    score++; if(score%100==0)coins++;
+    scoreEl();
+  }
+  requestAnimationFrame(loop);
+}
+
+function scoreEl(){
+  score.textContent=score;
+  coins.textContent=coins;
+}
+
+/* SETTINGS */
+function toggleSound(){
+  soundOn=!soundOn;
+  soundTxt.textContent=soundOn?"ON":"OFF";
+  save();
+}
+
+/* SAVE */
+function save(){
+  localStorage.setItem("coins",coins);
+  localStorage.setItem("cars",JSON.stringify(cars));
+  localStorage.setItem("selected",selected);
+  localStorage.setItem("sound",soundOn?"on":"off");
+}
+</script>
+
+</body>
+</html>
